@@ -24,3 +24,7 @@ dmypy.json
 
 # uv
 .python-version
+
+# Packaging
+*.egg-info/
+build/
