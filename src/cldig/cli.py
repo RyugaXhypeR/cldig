@@ -1,12 +1,10 @@
 import click
 import git
-
 from rich.console import Console
-from rich.table import Table, Column
-from rich.panel import Panel
 from rich.syntax import Syntax
+from rich.table import Column, Table
 
-from .git_utils import first_bad_commit, get_diff
+from .git_utils import first_bad_commit
 
 console = Console()
 
@@ -21,7 +19,9 @@ def cli(good: str, bad: str, test: str, root: str, diff_only: bool) -> None:
     repo = git.Repo(root)
     commit, num_revs, num_steps = first_bad_commit(repo, good, bad, test)
 
-    console.print(f"[bold blue]Scanned {num_revs} revisions in {num_steps} steps.[/bold blue]")
+    console.print(
+        f"[bold blue]Scanned {num_revs} revisions in {num_steps} steps.[/bold blue]"
+    )
     console.print(
         f"[bold green]✔ Found the first bad commit:[/bold green] [bold yellow]{commit.hexsha}[/bold yellow]"
     )
@@ -34,22 +34,16 @@ def cli(good: str, bad: str, test: str, root: str, diff_only: bool) -> None:
 
 
 def show_diff(commit: git.Commit) -> None:
-    """Returns a concise Rich panel with the git diff output for the commit."""
-    diff_text = get_diff(commit)
+    """Display changes made in `commit`"""
 
-    if not diff_text.strip():
-        return Panel(
-            "[yellow]No diff available for this commit.[/yellow]",
-            title="Diff",
-            border_style="red",
-        )
-
+    diff_text = commit.repo.git.show(commit.hexsha)
     syntax = Syntax(diff_text, "diff", theme="monokai", word_wrap=True)
     console.print(syntax)
 
 
 def show_stat(commit: git.Commit) -> None:
-    """Returns a Rich table summarizing the commit changes."""
+    """Display summary of changed files in `commit`"""
+
     table = Table(
         Column(header="File", justify="left", style="cyan"),
         Column(header="Insertions", justify="right", style="green"),
@@ -60,7 +54,7 @@ def show_stat(commit: git.Commit) -> None:
 
     for file, details in commit.stats.files.items():
         table.add_row(
-            file,
+            str(file),
             str(details.get("insertions", 0)),
             str(details.get("deletions", 0)),
             str(details.get("lines", 0)),
