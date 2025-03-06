@@ -6,11 +6,7 @@ import git
 client = OpenAI()
 
 
-class LLMSuggestionError(Exception):
-    ...
-
-
-def suggest(commit: git.Commit) -> str:
+def suggest(commit: git.Commit) -> str | None:
     """Generate a suggestion for a given commit using OpenAI."""
 
     commit_message = commit.message.strip()
@@ -33,6 +29,6 @@ def suggest(commit: git.Commit) -> str:
 
     suggestion = response.choices[0].message.content
     if suggestion is None:
-        raise LLMSuggestionError("Couldn't generate suggestion!")
+        return None
 
     return suggestion.strip()
