@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1.8",
+    "git-python>=1.0.3",
+    "rich>=13.9.4",
 ]
 
 [project.scripts]
