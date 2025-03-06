@@ -12,3 +12,10 @@ dependencies = [
 
 [project.scripts]
 cldig = "cldig.cli:cli"
+
+[tool.ruff]
+line-length = 120
+fix = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

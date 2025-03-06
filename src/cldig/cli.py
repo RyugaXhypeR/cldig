@@ -1,10 +1,13 @@
 import click
 import git
+from rich.panel import Panel
+from rich.markdown import Markdown
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.table import Column, Table
 
 from .git_utils import first_bad_commit
+from .llm import suggest
 
 console = Console()
 
@@ -15,7 +18,9 @@ console = Console()
 @click.option("--test", "-t", required=True, help="Test command")
 @click.option("--root", "-r", default=".", help="Git repository root")
 @click.option("--diff-only", "-d", is_flag=True, help="Only show `git diff` output")
-def cli(good: str, bad: str, test: str, root: str, diff_only: bool) -> None:
+def cli(
+    good: str, bad: str, test: str, root: str, diff_only: bool
+) -> None:
     repo = git.Repo(root)
     commit, num_revs, num_steps = first_bad_commit(repo, good, bad, test)
 
@@ -31,6 +36,8 @@ def cli(good: str, bad: str, test: str, root: str, diff_only: bool) -> None:
 
     if diff_only:
         return
+
+    show_suggestion(commit)
 
 
 def show_diff(commit: git.Commit) -> None:
@@ -61,3 +68,21 @@ def show_stat(commit: git.Commit) -> None:
         )
 
     console.print(table)
+
+
+def show_suggestion(commit: git.Commit) -> None:
+    """Display the AI-generated suggestion for a commit in a nice format."""
+
+    suggestion = suggest(commit)
+
+    if not suggestion:
+        console.print("[bold yellow]No suggestions found.[/bold yellow]")
+        return
+
+    panel = Panel(
+        Markdown(suggestion),
+        title=f"[bold cyan]Suggestion for commit {commit.hexsha[:7]}[/bold cyan]",
+        expand=False,
+    )
+
+    console.print(panel)
