@@ -1,7 +1,7 @@
 from textwrap import dedent
 
-from openai import OpenAI
 import git
+from openai import OpenAI
 
 client = OpenAI()
 
