@@ -2,7 +2,7 @@
 name = "cldig"
 version = "0.1.0"
 description = "Find and recommend fix in your project"
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1.8",
