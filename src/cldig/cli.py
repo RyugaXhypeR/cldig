@@ -1,10 +1,14 @@
+from pathlib import Path
+
 import click
 import git
-from rich.panel import Panel
+from rich.align import Align
+from rich.console import Console, Group
 from rich.markdown import Markdown
-from rich.console import Console
+from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Column, Table
+from rich.tree import Tree
 
 from .git_utils import first_bad_commit
 from .llm import suggest
@@ -18,9 +22,7 @@ console = Console()
 @click.option("--test", "-t", required=True, help="Test command")
 @click.option("--root", "-r", default=".", help="Git repository root")
 @click.option("--diff-only", "-d", is_flag=True, help="Only show `git diff` output")
-def cli(
-    good: str, bad: str, test: str, root: str, diff_only: bool
-) -> None:
+def cli(good: str, bad: str, test: str, root: str, diff_only: bool) -> None:
     repo = git.Repo(root)
     commit, num_revs, num_steps = first_bad_commit(repo, good, bad, test)
 
@@ -31,8 +33,7 @@ def cli(
         f"[bold green]✔ Found the first bad commit:[/bold green] [bold yellow]{commit.hexsha}[/bold yellow]"
     )
 
-    show_stat(commit)
-    show_diff(commit)
+    show_diff_view(commit)
 
     if diff_only:
         return
@@ -40,15 +41,44 @@ def cli(
     show_suggestion(commit)
 
 
-def show_diff(commit: git.Commit) -> None:
-    """Display changes made in `commit`"""
+def show_diff_view(commit: git.Commit) -> None:
+    """Display the diff view containing summary of changes made in `commit`
+    along with a diff tree.
+    """
 
-    diff_text = commit.repo.git.show(commit.hexsha)
-    syntax = Syntax(diff_text, "diff", theme="monokai", word_wrap=True)
-    console.print(syntax)
+    working_dir = Path(commit.repo.working_dir).name
+
+    tree = Tree(label="Diff Tree", guide_style="bright_black", hide_root=True)
+    root = tree.add(
+        f":file_folder: [bold bright_yellow]{working_dir}[/]", guide_style="bright_blue"
+    )
+
+    for filepath in commit.stats.files:
+        *parts, file = Path(filepath).parts
+        node = root
+
+        for part in parts:
+            node = node.add(f":file_folder: [bold cyan]{part}[/]")
+
+        diff_text = commit.repo.git.show(commit.hexsha, "--", filepath)
+        syntax = Syntax(diff_text, "diff", theme="monokai", word_wrap=True)
+        node.add(
+            Group(
+                f"📄 [bold magenta]{file}[/]",
+                Panel(syntax, border_style="bright_black"),
+            )
+        )
+
+    stat_table = get_stat_table(commit)
+    console.print(
+        Panel(
+            Group(Align(stat_table, align="center"), tree),
+            title="[b green]Diff View[/]",
+        )
+    )
 
 
-def show_stat(commit: git.Commit) -> None:
+def get_stat_table(commit: git.Commit) -> Table:
     """Display summary of changed files in `commit`"""
 
     table = Table(
@@ -67,7 +97,7 @@ def show_stat(commit: git.Commit) -> None:
             str(details.get("lines", 0)),
         )
 
-    console.print(table)
+    return table
 
 
 def show_suggestion(commit: git.Commit) -> None:
