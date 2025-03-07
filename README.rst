@@ -29,3 +29,8 @@ To get started checkout the help command
 .. code:: bash
 
    cldig --help
+
+
+Note::
+
+    To get the LLM suggestions, you need to have ``OPENAI_API_KEY`` environment variable set.
